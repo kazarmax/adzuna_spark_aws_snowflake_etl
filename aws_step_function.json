@@ -1,0 +1,56 @@
+{
+  "StartAt": "ExtractDataFromAPI",
+  "States": {
+    "ExtractDataFromAPI": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-east-1:123123123123:function:lambda_adzuna_extract_data",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "FailureState"
+        }
+      ],
+      "Next": "RunTransformationJob"
+    },
+    "RunTransformationJob": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "adzuna_etl_transformation_job"
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "FailureState"
+        }
+      ],
+      "Next": "MoveProcessedFiles"
+    },
+    "MoveProcessedFiles": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-east-1:123123123123:function:lambda_adzuna_move_processed_files",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "FailureState"
+        }
+      ],
+      "Next": "SuccessState"
+    },
+    "SuccessState": {
+      "Type": "Succeed",
+      "Comment": "ETL process completed successfully"
+    },
+    "FailureState": {
+      "Type": "Fail",
+      "Cause": "An error occurred in the ETL process",
+      "Error": "ETLFailed"
+    }
+  }
+}
